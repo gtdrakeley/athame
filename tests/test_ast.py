@@ -2,6 +2,7 @@ from unittest import mock
 
 import pendulum
 import pytest
+
 from athame import exceptions
 from athame.ast import (
     Agenda,
@@ -11,7 +12,6 @@ from athame.ast import (
     Time,
     WeekdayInterval,
 )
-
 from tests import tools as test_tools
 
 

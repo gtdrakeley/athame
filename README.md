@@ -8,10 +8,10 @@
 - [About](#about)
 - [Installation](#installation)
 - [Usage & Examples](#usage--examples)
-  - [DSL](#dsl)
-  - [Querying the Schedule](#querying-the-schedule)
-  - [Defining a Schedule](#defining-a-schedule)
   - [Minimal Example](#minimal-example)
+  - [Defining a Schedule](#defining-a-schedule)
+  - [Querying the Schedule](#querying-the-schedule)
+  - [DSL](#dsl)
 - [License](#license)
 
 ## About
@@ -24,7 +24,7 @@ While building various daemons of the type described above and considering exist
 
 `Athame` is currently in very early beta and thus the API is subject to breaking changes.
 
-Potential future features include:
+Potential future features include but are not limited to:
 - Supporting blocks of time beyond weeks such as months and years.
 - Changing ranges to be exclusive on the terminating side to better align with user expectations.
 - Providing a class rather than a top level factory function
@@ -47,6 +47,97 @@ pipenv install athame
 ```
 
 ## Usage & Examples
+
+### Minimal Example
+
+```python
+from athame import from_dsl
+
+
+def get_work():
+  """
+  an exercise for the reader :^)
+  """
+
+
+def worker(schedule):
+  while True:
+    schedule.sleep_until_allowed()
+
+    work = get_work()
+
+    for task in work:
+      # do stuff
+
+      if not schedule.is_allowed_now():
+        break
+
+if __name__ == "__main__":
+  # work hours only
+  schedule = from_dsl("mon-fri allow 0800-1659")
+  worker(schedule)
+```
+
+### Defining a Schedule
+
+To build a schedule use the `from_dsl` function.
+
+
+```python
+from athame import from_dsl
+
+# all day all week
+schedule = from_dsl("sun-sat allow 0000")
+
+# the Schedule class also has convenience method for generating an all day all week schedule.
+from athame import Schedule
+
+schedule = Schedule.always_allowed()
+
+# all day all week except between 8:00 and 20:00
+#   notice we used 19:59 as the terminating time as range's in athame are inclusive
+#   and we want to start executing right at 20:00 rather than at 20:01.
+schedule = from_dsl("sun-sat allow 0000 forbid 0800-1959")
+
+# monday through friday during business hours
+schedule = from_dsl("mon-fri allow 0800-1659")
+
+# all day all week except during business hours
+schedule = from_dsl(
+  """
+  sun-sat allow 0000
+  mon-fri forbid 0800-1659
+  """
+)
+```
+
+### Querying the Schedule
+
+Once a schedule is specified, `athame` provides simple functions for querying the schedule to see if executions is allowed at a specific moment in time.
+
+```python
+# checking a specific moment
+if schedule.is_allowed_at(moment):
+  ...
+
+# checking a specific moment, raising a ScheduleError if not allowed.
+schedule.is_allowed_at_or_raise(moment)
+
+# checking now
+while schedule.is_allowed_now():
+  ...
+
+# checking now, raising a ScheduleError if not allowed
+schedule.is_allowed_now_or_raise()
+
+# getting the moment at the start of the next allowed period after a given moment
+next_allowed_moment = schedule.next_moment_allowed_after(moment)
+
+# sleeping until the next allowed period of time
+schedule.sleep_until_allowed()
+```
+
+It is this author's opinion that Python's built-in [datetime](https://docs.python.org/3/library/datetime.html) library is lacking some key features and makes hazardous decisions--namely that datetimes are by default naive without a timezone--which makes it both difficult to work with and code using it prone to errors. For this reason, `athame` adopts use of the absolutely fantastic [pendulum](https://pendulum.eustace.io/docs/) library by Sébastien Eustace and thus expects `pendulum.DateTime` objects with timezones for the `moment` variables in examples above. I highly recommend you give [pendulum](https://pendulum.eustace.io/docs/) a try.
 
 ### DSL
 
@@ -101,7 +192,7 @@ Intervals specified as a time with no hyphen are assumed to go to the end of the
 1000-2359
 ```
 
-Intervals preceded by a hyphen without an associated starting time are assumed to start at the beginning of the day. The following are equivalent. The following intervals are equivalent:
+Intervals preceded by a hyphen without an associated starting time are assumed to start at the beginning of the day. The following intervals are equivalent:
 
 ```
 -1330
@@ -165,98 +256,7 @@ sunday allow 0000
 mon-fri allow 0500-1659
 ```
 
-Further examples for schedule can be seen in the code samples in the [Schedule Examples](#schedule-examples) section below.
-
-### Querying the Schedule
-
-Once a schedule is specified, `athame` provides simple functions for querying the schedule to see if executions is allowed at a specific moment in time.
-
-```python
-# checking a specific moment
-if schedule.is_allowed_at(moment):
-  ...
-
-# checking a specific moment, raising a ScheduleError if not allowed.
-schedule.is_allowed_at_or_raise(moment)
-
-# checking now
-while schedule.is_allowed_now():
-  ...
-
-# checking now, raising a ScheduleError if not allowed
-schedule.is_allowed_now_or_raise()
-
-# getting the moment at the start of the next allowed period after a given moment
-next_allowed_moment = schedule.next_moment_allowed_after(moment)
-
-# sleeping until the next allowed period of time
-schedule.sleep_until_allowed()
-```
-
-It is this author's opinion that Python's built-in [datetime](https://docs.python.org/3/library/datetime.html) library is lacking some key features and makes hazardous decisions--namely that datetimes are by default naive without a timezone--which makes it both difficult to work with and code using it prone to errors. For this reason, `athame` adopts use of the absolutely fantastic [pendulum](https://pendulum.eustace.io/docs/) library by Sébastien Eustace and thus expects `pendulum.DateTime` objects with timezones for the `moment` variables in examples above. I highly recommend you give [pendulum](https://pendulum.eustace.io/docs/) a try.
-
-### Defining a Schedule
-
-To build a schedule use the `from_dsl` function.
-
-
-```python
-from athame import from_dsl
-
-# all day all week
-schedule = from_dsl("sun-sat allow 0000")
-
-# the Schedule class also has convenience method for generating an all day all week schedule.
-from athame import Schedule
-
-schedule = Schedule.always_allowed()
-
-# all day all week except between 8:00 and 20:00
-#   notice we used 19:59 as the terminating time as range's in athame are inclusive
-#   and we want to start executing right at 20:00 rather than at 20:01.
-schedule = from_dsl("sun-sat allow 0000 forbid 0800-1959")
-
-# monday through friday during business hours
-schedule = from_dsl("mon-fri allow 0800-1659")
-
-# all day all week except during business hours
-schedule = from_dsl(
-  """
-  sun-sat allow 0000
-  mon-fri forbid 0800-1659
-  """
-)
-```
-
-### Minimal Example
-
-```python
-from athame import Schedule, from_dsl
-
-
-def get_work():
-  """
-  an exercise for the reader :^)
-  """
-
-
-def worker(schedule: Schedule):
-  while True:
-    schedule.sleep_until_allowed()
-
-    work = get_work()
-
-    for task in work:
-      # do stuff
-
-      if not schedule.is_allowed_now():
-        break
-
-if __name__ == "__main__":
-  # work hours only
-  schedule = from_dsl("sun-sat allow 0800-1659")
-  worker(schedule)
-```
+Further examples for schedule can be seen in the code samples in the [Defining a Schedule](#defining-a-schedule) section above.
 
 ## License
 
