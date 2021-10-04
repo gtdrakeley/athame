@@ -6,9 +6,10 @@ import pathlib
 import typing as tp
 from string import ascii_letters
 
+from pydantic import BaseModel
+
 from athame import exceptions
 from athame.trie import Trie
-from pydantic import BaseModel
 
 
 class TokenType(enum.Enum):

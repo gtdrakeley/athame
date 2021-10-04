@@ -3,6 +3,7 @@ import re
 import tempfile
 
 import pytest
+
 from athame import exceptions
 from athame.lexer import Lexer, Position, Token, TokenType
 

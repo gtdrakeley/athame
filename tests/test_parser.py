@@ -1,4 +1,5 @@
 import pytest
+
 from athame import exceptions
 from athame.ast import Agenda, Directive, Interval, Time, WeekdayInterval
 from athame.lexer import Lexer, TokenType

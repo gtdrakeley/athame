@@ -6,8 +6,9 @@ import typing as tp
 from time import sleep
 
 import pendulum
-from athame import exceptions
 from pydantic import BaseModel, Field, conint
+
+from athame import exceptions
 
 
 class Time(BaseModel):
